@@ -1,38 +1,41 @@
-const sgMail = require("@sendgrid/mail");
-require("dotenv").config();
+const nodemailer = require("nodemailer");
 
 exports.sendEmail = async (data) => {
-  const sendgridApiKey = process.env.SENDGRID_API_KEY;
-  sgMail.setApiKey(sendgridApiKey);
-
   const { name, email, referenceNumber } = data;
+
+  const serviceEmail = process.env.SERVICE_EMAIL;
+  const servicePassword = process.env.SERVICE_PASSWORD;
+
+  const transporter = nodemailer.createTransport({
+    service: "gmail",
+    auth: {
+      user: serviceEmail,
+      pass: servicePassword,
+    },
+  });
 
   const confirmationMsg = {
     to: email,
-    from: "kaushikadinith1996@gmail.com",
+    from: serviceEmail,
     subject: "Booking Confirmation",
     text: `Dear ${name},\n\nYour booking reference number ${referenceNumber}. 
     Thank you!`,
   };
 
   const detailsMsg = {
-    to: "dilanjanranmalinda98@gmail.com",
-    from: "kaushikadinith1996@gmail.com",
+    to: serviceEmail,
+    from: email,
     subject: `New Booking, reference number ${referenceNumber}`,
     text: `Booking details for ${name}:\n\n${JSON.stringify(data, null, 2)}`,
   };
 
   try {
-    await sgMail.send(confirmationMsg);
+    await transporter.sendMail(confirmationMsg);
 
-    await sgMail.send(detailsMsg);
+    await transporter.sendMail(detailsMsg);
     return true;
   } catch (error) {
-    console.log(
-      "Error sending Email!",
-      error?.code,
-      error?.response?.body?.errors
-    );
+    console.log("Error sending Email!", error);
     return false;
   }
 };
